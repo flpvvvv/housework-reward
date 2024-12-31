@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_extensions",
     "drf_yasg",
+    "housework.apps.HouseworkConfig",
 ]
 
 MIDDLEWARE = [
@@ -134,11 +135,13 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Strip any protocol prefix from MINIO_ENDPOINT
+minio_endpoint = os.environ.get("MINIO_ENDPOINT", "localhost:9000")
+if "://" in minio_endpoint:
+    minio_endpoint = minio_endpoint.split("://")[1]
 
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-AWS_S3_ENDPOINT_URL = "http://minio:9000"
-AWS_ACCESS_KEY_ID = os.environ.get("MINIO_ROOT_USER", "minio")
-AWS_SECRET_ACCESS_KEY = os.environ.get("MINIO_ROOT_PASSWORD", "minio123")
-AWS_STORAGE_BUCKET_NAME = "housework-bucket"
-AWS_S3_REGION_NAME = ""  # If not using a region
-AWS_S3_USE_SSL = False
+MINIO_ENDPOINT = minio_endpoint
+MINIO_ACCESS_KEY = os.environ.get("MINIO_ROOT_USER", "minio")
+MINIO_SECRET_KEY = os.environ.get("MINIO_ROOT_PASSWORD", "minio123")
+MINIO_BUCKET_NAME = 'housework-images'
+MINIO_SECURE = False
