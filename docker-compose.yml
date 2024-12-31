@@ -1,0 +1,79 @@
+version: "3.9"
+
+services:
+  # ------------------------------
+  # BACKEND (Django)
+  # ------------------------------
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: housework-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - postgresql
+      - minio
+    networks:
+      - housework-network
+
+  # ------------------------------
+  # FRONTEND (React + Tailwind)
+  # ------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: housework-frontend
+    ports:
+      - "3000:80" 
+    depends_on:
+      - backend
+    networks:
+      - housework-network
+
+  # ------------------------------
+  # POSTGRESQL
+  # ------------------------------
+  postgresql:
+    image: postgres:15
+    container_name: housework-postgres
+    # Expose port 5432 to the host if you want to connect using PG tools
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - housework-network
+
+  # ------------------------------
+  # MINIO
+  # ------------------------------
+  minio:
+    image: minio/minio
+    container_name: housework-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"   # MinIO API
+      - "9001:9001"   # MinIO console
+    env_file:
+      - .env
+    volumes:
+      - miniodata:/data
+    networks:
+      - housework-network
+
+# ------------------------------
+# NETWORK & VOLUMES
+# ------------------------------
+networks:
+  housework-network:
+    driver: bridge
+
+volumes:
+  pgdata:
+  miniodata:
