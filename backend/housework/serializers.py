@@ -9,6 +9,7 @@ class ContributorSerializer(serializers.ModelSerializer):
 class HouseworkRecordSerializer(serializers.ModelSerializer):
     contributor_name = serializers.CharField(write_only=True)
     contributor = ContributorSerializer(read_only=True)
+    image = serializers.FileField(required=False)
 
     class Meta:
         model = HouseworkRecord

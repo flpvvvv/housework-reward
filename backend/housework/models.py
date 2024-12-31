@@ -11,7 +11,7 @@ class HouseworkRecord(models.Model):
     record_time = models.DateTimeField(auto_now_add=True)
     scale = models.IntegerField(default=3)
     note = models.TextField(blank=True)
-    image = models.ImageField(upload_to='uploads/', blank=True)
+    image = models.CharField(max_length=500, blank=True, null=True)
 
     def __str__(self):
         return f"{self.contributor} - {self.record_time}"
