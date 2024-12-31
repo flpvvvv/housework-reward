@@ -9,7 +9,7 @@ class Contributor(models.Model):
 class HouseworkRecord(models.Model):
     contributor = models.ForeignKey(Contributor, on_delete=models.CASCADE)
     record_time = models.DateTimeField(auto_now_add=True)
-    scale = models.IntegerField(default=3)
+    points = models.IntegerField(default=3)
     note = models.TextField(blank=True)
     image = models.CharField(max_length=500, blank=True, null=True)
 
