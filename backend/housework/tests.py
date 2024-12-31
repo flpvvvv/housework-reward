@@ -123,6 +123,7 @@ class HouseworkRecordTests(APITestCase):
             content=b"fake-image-content",
             content_type="image/jpeg",
         )
+        self.test_url = "http://test-url/image.jpg"  # Add this line for reuse
 
     @patch("housework.views.get_minio_client")
     def test_update_housework_record(self, mock_get_minio):
@@ -165,6 +166,48 @@ class HouseworkRecordTests(APITestCase):
         self.assertIn("image", response.data)
         self.assertEqual(response.data["image"], test_url)
 
+    @patch("housework.views.get_minio_client")
+    def test_update_record_keeps_existing_image(self, mock_get_minio):
+        # Setup record with existing image
+        self.record.image = self.test_url
+        self.record.save()
+
+        url = reverse("update_housework_record", args=[self.record.id])
+        data = {
+            "note": "Updated without changing image",
+            "points": 15,
+            "contributor_name": self.contributor.name,
+        }
+
+        response = self.client.put(url, data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["image"], self.test_url)  # Image URL should remain unchanged
+
+    @patch("housework.views.get_minio_client")
+    def test_update_record_add_new_image(self, mock_get_minio):
+        # Setup record without image
+        self.record.image = None
+        self.record.save()
+
+        # Configure mock MinIO client
+        mock_client = Mock()
+        mock_client.bucket_exists.return_value = True
+        mock_client.generate_presigned_url.return_value = self.test_url
+        mock_get_minio.return_value = mock_client
+
+        url = reverse("update_housework_record", args=[self.record.id])
+        data = {
+            "note": "Added new image",
+            "points": 15,
+            "contributor_name": self.contributor.name,
+            "image": self.test_image,
+        }
+
+        response = self.client.put(url, data, format="multipart")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["image"], self.test_url)
+        mock_client.put_object.assert_called_once()
+
     def test_update_housework_record_invalid_id(self):
         url = reverse("update_housework_record", args=[999])
         data = {
@@ -186,3 +229,39 @@ class HouseworkRecordTests(APITestCase):
         url = reverse("delete_housework_record", args=[999])
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class HouseworkTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.contributor = Contributor.objects.create(name="Alice")
+        self.record = HouseworkRecord.objects.create(
+            contributor=self.contributor,
+            points=5,
+            note="Initial record"
+        )
+        self.update_url = reverse('update_housework_record', args=[self.record.id])  # Fixed URL name
+
+    def test_update_housework_record_new_contributor(self):
+        # Prepare update data with a new contributor
+        update_data = {
+            'contributor_name': 'Bob',
+            'points': 8,
+            'note': 'Updated record'
+        }
+
+        # Perform update request
+        response = self.client.put(self.update_url, update_data, format='json')
+
+        # Check response status and data
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['contributor']['name'], 'Bob')
+        self.assertEqual(response.data['points'], 8)
+        self.assertEqual(response.data['note'], 'Updated record')
+
+        # Verify new contributor was created
+        self.assertTrue(Contributor.objects.filter(name='Bob').exists())
+        
+        # Verify record was updated with new contributor
+        updated_record = HouseworkRecord.objects.get(id=self.record.id)
+        self.assertEqual(updated_record.contributor.name, 'Bob')
