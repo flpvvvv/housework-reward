@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "drf_yasg",
     "housework.apps.HouseworkConfig",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
@@ -54,6 +55,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -75,6 +77,13 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',  # If running locally
+    'http://localhost',       # If frontend is served from Docker on port 80
+    'http://localhost:5001',  # For Swagger UI
+    # Add other domains as needed
+]
 
 
 # Database
@@ -143,5 +152,5 @@ if "://" in minio_endpoint:
 MINIO_ENDPOINT = minio_endpoint
 MINIO_ACCESS_KEY = os.environ.get("MINIO_ROOT_USER", "minio")
 MINIO_SECRET_KEY = os.environ.get("MINIO_ROOT_PASSWORD", "minio123")
-MINIO_BUCKET_NAME = 'housework-images'
+MINIO_BUCKET_NAME = "housework-images"
 MINIO_SECURE = False
