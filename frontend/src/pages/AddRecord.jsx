@@ -25,7 +25,7 @@ const AddRecord = () => {
     }
 
     try {
-      const response = await api.post('/records/add/', formData, {  // changed endpoint
+      await api.post('/records/add/', formData, {  // changed endpoint
         headers: {
           'Content-Type': 'multipart/form-data',
         },

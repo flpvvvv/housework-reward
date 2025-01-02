@@ -1,0 +1,68 @@
+contributors:
+- id: 1
+  name: Alice
+- id: 2
+  name: Bob
+- id: 3
+  name: Charlie
+records:
+- contributor_id: 1
+  id: 1
+  image: null
+  note: Cleaned the living room
+  points: 3
+  record_time: '2025-01-01T10:00:00'
+- contributor_id: 2
+  id: 2
+  image: null
+  note: Washed the dishes
+  points: 5
+  record_time: '2025-01-01T11:00:00'
+- contributor_id: 3
+  id: 3
+  image: null
+  note: Vacuumed the carpets
+  points: 4
+  record_time: '2025-01-01T12:00:00'
+- contributor_id: 1
+  id: 4
+  image: null
+  note: Watered the plants
+  points: 2
+  record_time: '2025-01-02T09:30:00'
+- contributor_id: 2
+  id: 5
+  image: null
+  note: Took out the trash
+  points: 3
+  record_time: '2025-01-02T14:00:00'
+- contributor_id: 3
+  id: 6
+  image: null
+  note: Mowed the lawn
+  points: 5
+  record_time: '2025-01-03T08:00:00'
+- contributor_id: 1
+  id: 7
+  image: null
+  note: Organized the pantry
+  points: 4
+  record_time: '2025-01-03T16:30:00'
+- contributor_id: 2
+  id: 8
+  image: null
+  note: Fed the pets
+  points: 1
+  record_time: '2025-01-04T07:15:00'
+- contributor_id: 3
+  id: 9
+  image: null
+  note: Cleaned the windows
+  points: 2
+  record_time: '2025-01-04T18:45:00'
+- contributor_id: 1
+  id: 10
+  image: null
+  note: Changed the bedsheets
+  points: 3
+  record_time: '2025-01-05T12:00:00'

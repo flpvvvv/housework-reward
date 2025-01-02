@@ -14,7 +14,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -79,9 +79,9 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',  # If running locally
-    'http://localhost',       # If frontend is served from Docker on port 80
-    'http://localhost:5001',  # For Swagger UI
+    "http://localhost:3000",  # If running locally
+    "http://localhost",  # If frontend is served from Docker on port 80
+    "http://localhost:5001",  # For Swagger UI
     # Add other domains as needed
 ]
 
@@ -95,9 +95,7 @@ DATABASES = {
         "NAME": os.environ.get("POSTGRES_DB", "postgres"),
         "USER": os.environ.get("POSTGRES_USER", "postgres"),
         "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
-        "HOST": os.environ.get(
-            "DB_HOST", "localhost"
-        ),  # Changed from 'postgresql' to be configurable
+        "HOST": os.environ.get("DB_HOST", "localhost"),  # Default to localhost
         "PORT": os.environ.get("DB_PORT", "5432"),
     }
 }
