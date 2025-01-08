@@ -18,10 +18,15 @@ const EditRecord = () => {
   useEffect(() => {
     const fetchRecord = async () => {
       try {
-        const response = await api.get(`/records/${id}/`);
+        const response = await api.get(`/housework/${id}/`);
         const record = response.data;
+        // Format the time string to work with datetime-local input
+        const formattedTime = new Date(record.time)
+          .toISOString()
+          .slice(0, 16); // Get YYYY-MM-DDThh:mm format
+        
         setForm({
-          time: record.time,
+          time: formattedTime,
           contributor_name: record.contributor_name,
           points: record.points,
           note: record.note,
@@ -54,13 +59,13 @@ const EditRecord = () => {
     }
 
     try {
-      await api.put(`/records/${id}/`, formData, {
+      await api.put(`/housework/${id}/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
       setStatus({ message: 'Record updated successfully!', error: false });
-      setTimeout(() => navigate('/records'), 1500);
+      setTimeout(() => navigate('/housework'), 1500);
     } catch (error) {
       setStatus({
         message: error.response?.data || 'Error updating record',
@@ -124,7 +129,7 @@ const EditRecord = () => {
           </button>
           <button
             type="button"
-            onClick={() => navigate('/records')}
+            onClick={() => navigate('/')}
             className="bg-gray-500 text-white rounded p-2 flex-1"
           >
             Cancel

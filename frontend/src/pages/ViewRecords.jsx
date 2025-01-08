@@ -18,7 +18,7 @@ const ViewRecords = () => {
   useEffect(() => {
     const fetchRecords = async () => {
       try {
-        const response = await api.get('/records/');
+        const response = await api.get('/housework/');
         setRecords(response.data.results || []);
         setError(null);
       } catch (err) {
@@ -36,7 +36,7 @@ const ViewRecords = () => {
     if (!window.confirm('Are you sure you want to delete this record?')) return;
     
     try {
-      await api.delete(`/records/${id}/delete/`);
+      await api.delete(`/housework/${id}/`);
       setRecords(records.filter(record => record.id !== id));
     } catch (err) {
       setError('Failed to delete record');
@@ -84,7 +84,7 @@ const ViewRecords = () => {
                 )}
                 <div className="flex gap-2 mt-3">
                   <button
-                    onClick={() => navigate(`/records/edit/${record.id}`)}
+                    onClick={() => navigate(`/edit/${record.id}`)}
                     className="flex-1 bg-blue-500 text-white rounded px-4 py-2"
                   >
                     Edit
@@ -128,7 +128,7 @@ const ViewRecords = () => {
                     <td className="border px-4 py-2">
                       <div className="flex gap-2">
                         <button
-                          onClick={() => navigate(`/records/edit/${record.id}`)}
+                          onClick={() => navigate(`/edit/${record.id}`)}
                           className="bg-blue-500 text-white rounded px-3 py-1 text-sm"
                         >
                           Edit
