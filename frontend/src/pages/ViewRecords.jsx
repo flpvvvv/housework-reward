@@ -34,25 +34,76 @@ const ViewRecords = () => {
       {records.length === 0 ? (
         <p>No records found</p>
       ) : (
-        <ul className="space-y-4">
-          {records.map((record) => (
-            <li key={record.id} className="border rounded p-4">
-              <p><strong>Time:</strong> {new Date(record.record_time).toLocaleString()}</p>
-              <p><strong>Contributor:</strong> {record.contributor.name}</p>
-              <p><strong>Points:</strong> {record.points}</p>
-              <p><strong>Note:</strong> {record.note}</p>
-              {record.image && (
-                <img src={record.image} alt="Record" className="mt-2 max-w-xs" />
-              )}
-              <button
-                onClick={() => navigate(`/records/edit/${record.id}`)}
-                className="mt-2 bg-blue-500 text-white rounded px-4 py-2"
-              >
-                Edit
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          {/* Mobile view (cards) */}
+          <div className="md:hidden space-y-4">
+            {records.map((record) => (
+              <div key={record.id} className="bg-white rounded-lg shadow p-4 border">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="font-semibold">Time:</div>
+                  <div>{new Date(record.record_time).toLocaleString()}</div>
+                  
+                  <div className="font-semibold">Contributor:</div>
+                  <div>{record.contributor.name}</div>
+                  
+                  <div className="font-semibold">Points:</div>
+                  <div>{record.points}</div>
+                  
+                  <div className="font-semibold">Note:</div>
+                  <div>{record.note}</div>
+                </div>
+                {record.image && (
+                  <img src={record.image} alt="Record" className="mt-2 w-full h-auto rounded" />
+                )}
+                <button
+                  onClick={() => navigate(`/records/edit/${record.id}`)}
+                  className="mt-3 w-full bg-blue-500 text-white rounded px-4 py-2"
+                >
+                  Edit
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop view (table) */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="min-w-full table-auto border-collapse">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border px-4 py-2">Time</th>
+                  <th className="border px-4 py-2">Contributor</th>
+                  <th className="border px-4 py-2">Points</th>
+                  <th className="border px-4 py-2">Note</th>
+                  <th className="border px-4 py-2">Image</th>
+                  <th className="border px-4 py-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {records.map((record) => (
+                  <tr key={record.id} className="border hover:bg-gray-50">
+                    <td className="border px-4 py-2">{new Date(record.record_time).toLocaleString()}</td>
+                    <td className="border px-4 py-2">{record.contributor.name}</td>
+                    <td className="border px-4 py-2">{record.points}</td>
+                    <td className="border px-4 py-2">{record.note}</td>
+                    <td className="border px-4 py-2">
+                      {record.image && (
+                        <img src={record.image} alt="Record" className="h-20 w-auto" />
+                      )}
+                    </td>
+                    <td className="border px-4 py-2">
+                      <button
+                        onClick={() => navigate(`/records/edit/${record.id}`)}
+                        className="bg-blue-500 text-white rounded px-3 py-1 text-sm"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );
