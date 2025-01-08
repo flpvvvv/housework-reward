@@ -35,9 +35,6 @@ def add_housework_record(request):
 
         client = get_minio_client()
 
-        if not client.bucket_exists(settings.MINIO_BUCKET_NAME):
-            client.make_bucket(settings.MINIO_BUCKET_NAME)
-
         # Get the file size
         file_size = image.size
 
@@ -49,9 +46,7 @@ def add_housework_record(request):
             content_type=image.content_type,
         )
         
-        # Generate URL and add it to the data
-        url = client.presigned_get_object(settings.MINIO_BUCKET_NAME, filename)
-        data["image"] = url
+        data["image"] = f"{settings.MINIO_BUCKET_NAME}/{filename}"
     
     serializer = HouseworkRecordSerializer(data=data)
     if serializer.is_valid():
@@ -114,9 +109,6 @@ def update_housework_record(request, pk):
 
         client = get_minio_client()
 
-        if not client.bucket_exists(settings.MINIO_BUCKET_NAME):
-            client.make_bucket(settings.MINIO_BUCKET_NAME)
-
         image_data = image.read()
         client.put_object(
             settings.MINIO_BUCKET_NAME,
@@ -126,8 +118,7 @@ def update_housework_record(request, pk):
             content_type=image.content_type,
         )
 
-        url = client.generate_presigned_url("GET", settings.MINIO_BUCKET_NAME, filename)
-        data["image"] = url
+        data["image"] = f"{settings.MINIO_BUCKET_NAME}/{filename}"
     elif "image" not in data:
         # Keep existing image if not provided in request
         data["image"] = record.image
