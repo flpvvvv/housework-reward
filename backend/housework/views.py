@@ -96,6 +96,9 @@ class HouseworkRecordViewSet(viewsets.ModelViewSet):
         data = request.data.dict() if hasattr(request.data, 'dict') else request.data
         
         if "image" in request.FILES:
+            # Delete old image if it exists
+            if instance.image:
+                self.delete_image_from_minio(instance.image)
             data["image"] = self.handle_image_upload(request.FILES["image"])
         
         serializer = self.get_serializer(instance, data=data, partial=partial)
