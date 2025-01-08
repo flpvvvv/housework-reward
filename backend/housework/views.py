@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 from .serializers import HouseworkRecordSerializer, ContributorSerializer
 from minio import Minio
 from django.conf import settings
@@ -14,6 +15,11 @@ def get_minio_client():
         secret_key=settings.MINIO_SECRET_KEY,
         secure=settings.MINIO_SECURE
     )
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 @api_view(['POST'])
 def add_housework_record(request):
@@ -133,3 +139,11 @@ def delete_housework_record(request, pk):
         
     record.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET'])
+def list_housework_records(request):
+    records = HouseworkRecord.objects.all().order_by('-record_time')
+    paginator = StandardResultsSetPagination()
+    paginated_records = paginator.paginate_queryset(records, request)
+    serializer = HouseworkRecordSerializer(paginated_records, many=True)
+    return paginator.get_paginated_response(serializer.data)
