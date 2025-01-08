@@ -32,6 +32,18 @@ const ViewRecords = () => {
     fetchRecords();
   }, []);
 
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this record?')) return;
+    
+    try {
+      await api.delete(`/records/${id}/delete/`);
+      setRecords(records.filter(record => record.id !== id));
+    } catch (err) {
+      setError('Failed to delete record');
+      console.error('Error deleting record:', err);
+    }
+  };
+
   if (loading) return <div className="container mx-auto p-4">Loading...</div>;
   if (error) return <div className="container mx-auto p-4 text-red-500">{error}</div>;
 
@@ -70,12 +82,20 @@ const ViewRecords = () => {
                 {record.image && (
                   <img src={getImageUrl(record.image)} alt="Record" className="mt-2 w-full h-auto rounded" />
                 )}
-                <button
-                  onClick={() => navigate(`/records/edit/${record.id}`)}
-                  className="mt-3 w-full bg-blue-500 text-white rounded px-4 py-2"
-                >
-                  Edit
-                </button>
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={() => navigate(`/records/edit/${record.id}`)}
+                    className="flex-1 bg-blue-500 text-white rounded px-4 py-2"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(record.id)}
+                    className="flex-1 bg-red-500 text-white rounded px-4 py-2"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -106,12 +126,20 @@ const ViewRecords = () => {
                       )}
                     </td>
                     <td className="border px-4 py-2">
-                      <button
-                        onClick={() => navigate(`/records/edit/${record.id}`)}
-                        className="bg-blue-500 text-white rounded px-3 py-1 text-sm"
-                      >
-                        Edit
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => navigate(`/records/edit/${record.id}`)}
+                          className="bg-blue-500 text-white rounded px-3 py-1 text-sm"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(record.id)}
+                          className="bg-red-500 text-white rounded px-3 py-1 text-sm"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
