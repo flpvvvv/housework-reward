@@ -12,7 +12,7 @@ const ViewRecords = () => {
     const fetchRecords = async () => {
       try {
         const response = await api.get('/records/');
-        setRecords(response.data);
+        setRecords(response.data.results || []);
         setError(null);
       } catch (err) {
         setError('Failed to fetch records');
@@ -37,8 +37,8 @@ const ViewRecords = () => {
         <ul className="space-y-4">
           {records.map((record) => (
             <li key={record.id} className="border rounded p-4">
-              <p><strong>Time:</strong> {new Date(record.time).toLocaleString()}</p>
-              <p><strong>Contributor:</strong> {record.contributor}</p>
+              <p><strong>Time:</strong> {new Date(record.record_time).toLocaleString()}</p>
+              <p><strong>Contributor:</strong> {record.contributor.name}</p>
               <p><strong>Points:</strong> {record.points}</p>
               <p><strong>Note:</strong> {record.note}</p>
               {record.image && (
