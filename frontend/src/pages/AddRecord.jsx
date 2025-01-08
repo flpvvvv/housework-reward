@@ -48,7 +48,13 @@ const AddRecord = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4 relative">
+      <button 
+        onClick={() => window.location.href = '/'} 
+        className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-full text-xl font-bold"
+      >
+        ✕
+      </button>
       <h1 className="text-2xl font-bold mb-4">Add New Record</h1>
       {status.message && (
         <div className={`p-2 mb-4 rounded ${status.error ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
