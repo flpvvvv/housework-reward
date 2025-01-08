@@ -70,6 +70,15 @@ class HouseworkRecordViewSet(viewsets.ModelViewSet):
         )
         return f"{settings.MINIO_BUCKET_NAME}/{filename}"
 
+    def delete_image_from_minio(self, image_path):
+        if image_path:
+            try:
+                bucket_name, object_name = image_path.split('/', 1)
+                client = get_minio_client()
+                client.remove_object(bucket_name, object_name)
+            except Exception as e:
+                print(f"Error deleting image from MinIO: {e}")
+
     def create(self, request, *args, **kwargs):
         data = request.data.dict() if hasattr(request.data, 'dict') else request.data
         if "image" in request.FILES:
@@ -96,6 +105,11 @@ class HouseworkRecordViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.image:
+            self.delete_image_from_minio(instance.image)
+        instance.delete()
 
 
 class ContributorViewSet(viewsets.ModelViewSet):
