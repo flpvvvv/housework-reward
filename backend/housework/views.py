@@ -43,7 +43,7 @@ class HouseworkRecordViewSet(viewsets.ModelViewSet):
         return f"{settings.MINIO_BUCKET_NAME}/{filename}"
 
     def create(self, request, *args, **kwargs):
-        data = request.data.copy()
+        data = request.data.dict() if hasattr(request.data, 'dict') else request.data
         if "image" in request.FILES:
             data["image"] = self.handle_image_upload(request.FILES["image"])
         
@@ -56,7 +56,7 @@ class HouseworkRecordViewSet(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
-        data = request.data.copy()
+        data = request.data.dict() if hasattr(request.data, 'dict') else request.data
         
         if "image" in request.FILES:
             data["image"] = self.handle_image_upload(request.FILES["image"])
