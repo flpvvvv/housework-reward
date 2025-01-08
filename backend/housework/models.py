@@ -7,6 +7,7 @@ class Contributor(models.Model):
         return self.name
 
 class HouseworkRecord(models.Model):
+    id = models.AutoField(primary_key=True)
     contributor = models.ForeignKey(Contributor, on_delete=models.CASCADE)
     record_time = models.DateTimeField(auto_now_add=True)
     points = models.IntegerField(default=3)
