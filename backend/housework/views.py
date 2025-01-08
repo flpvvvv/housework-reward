@@ -7,6 +7,8 @@ from minio import Minio
 from django.conf import settings
 import uuid
 from .models import Contributor, HouseworkRecord
+from PIL import Image
+import io
 
 
 def get_minio_client():
@@ -29,16 +31,42 @@ class HouseworkRecordViewSet(viewsets.ModelViewSet):
     serializer_class = HouseworkRecordSerializer
     pagination_class = StandardResultsSetPagination
 
+    def process_image(self, image_file):
+        img = Image.open(image_file)
+        
+        # Convert RGBA to RGB if necessary
+        if img.mode in ('RGBA', 'LA'):
+            background = Image.new('RGB', img.size, (255, 255, 255))
+            background.paste(img, mask=img.split()[-1])
+            img = background
+        
+        # Calculate new dimensions while maintaining aspect ratio
+        max_size = 2048
+        ratio = min(max_size/img.width, max_size/img.height)
+        if ratio < 1:
+            new_size = (int(img.width * ratio), int(img.height * ratio))
+            img = img.resize(new_size, Image.LANCZOS)
+        
+        # Save to bytes buffer
+        buffer = io.BytesIO()
+        format = image_file.content_type.split('/')[-1].upper()
+        if format == 'JPEG':
+            img.save(buffer, format=format, quality=80)
+        else:
+            img.save(buffer, format=format)
+        buffer.seek(0)
+        return buffer, format.lower()
+
     def handle_image_upload(self, image):
-        file_extension = image.name.split(".")[-1]
-        filename = f"{uuid.uuid4()}.{file_extension}"
+        processed_image, format = self.process_image(image)
+        filename = f"{uuid.uuid4()}.{format}"
         client = get_minio_client()
         client.put_object(
             settings.MINIO_BUCKET_NAME,
             filename,
-            image,
-            length=image.size,
-            content_type=image.content_type,
+            processed_image,
+            length=processed_image.getbuffer().nbytes,
+            content_type=f"image/{format}"
         )
         return f"{settings.MINIO_BUCKET_NAME}/{filename}"
 
