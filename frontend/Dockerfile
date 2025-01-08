@@ -19,5 +19,10 @@ RUN yarn build
 FROM nginx:stable-alpine
 COPY --from=builder /app/build /usr/share/nginx/html
 
+# Add script to generate env config at runtime
+RUN apk add --no-cache bash
+COPY env.sh /docker-entrypoint.d/
+RUN chmod +x /docker-entrypoint.d/env.sh
+
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

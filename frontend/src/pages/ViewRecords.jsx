@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api';
+import api, { minioEndpoint } from '../api';
 
-const MINIO_ENDPOINT = process.env.REACT_APP_MINIO_ENDPOINT;
+console.log(api.defaults.baseURL);
 
 const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
-  return `${MINIO_ENDPOINT}/${imagePath}`;
+  return `${minioEndpoint}/${imagePath}`;
 };
 
 const ViewRecords = () => {

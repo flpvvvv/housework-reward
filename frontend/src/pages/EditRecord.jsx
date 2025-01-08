@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../api';
+import api, { minioEndpoint } from '../api';
 import RecordForm from '../components/RecordForm';
-
-const MINIO_ENDPOINT = process.env.REACT_APP_MINIO_ENDPOINT;
 
 const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
-  return `${MINIO_ENDPOINT}/${imagePath}`;
+  return `${minioEndpoint}/${imagePath}`;
 };
 
 const EditRecord = () => {
