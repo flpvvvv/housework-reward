@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
 
+const MINIO_ENDPOINT = process.env.REACT_APP_MINIO_ENDPOINT;
+
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  return `${MINIO_ENDPOINT}/${imagePath}`;
+};
+
 const ViewRecords = () => {
   const navigate = useNavigate();
   const [records, setRecords] = useState([]);
@@ -53,7 +60,7 @@ const ViewRecords = () => {
                   <div>{record.note}</div>
                 </div>
                 {record.image && (
-                  <img src={record.image} alt="Record" className="mt-2 w-full h-auto rounded" />
+                  <img src={getImageUrl(record.image)} alt="Record" className="mt-2 w-full h-auto rounded" />
                 )}
                 <button
                   onClick={() => navigate(`/records/edit/${record.id}`)}
@@ -87,7 +94,7 @@ const ViewRecords = () => {
                     <td className="border px-4 py-2">{record.note}</td>
                     <td className="border px-4 py-2">
                       {record.image && (
-                        <img src={record.image} alt="Record" className="h-20 w-auto" />
+                        <img src={getImageUrl(record.image)} alt="Record" className="h-20 w-auto" />
                       )}
                     </td>
                     <td className="border px-4 py-2">
