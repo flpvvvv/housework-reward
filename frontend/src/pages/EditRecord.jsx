@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api';
+import RecordForm from '../components/RecordForm';
+
+const MINIO_ENDPOINT = process.env.REACT_APP_MINIO_ENDPOINT;
+
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  return `${MINIO_ENDPOINT}/${imagePath}`;
+};
 
 const EditRecord = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState({ message: '', error: false });
   const [form, setForm] = useState({
     time: '',
@@ -20,19 +29,16 @@ const EditRecord = () => {
       try {
         const response = await api.get(`/housework/${id}/`);
         const record = response.data;
-        // Format the time string to work with datetime-local input
-        const formattedTime = new Date(record.time)
-          .toISOString()
-          .slice(0, 16); // Get YYYY-MM-DDThh:mm format
-        
+        const formattedTime = new Date(record.record_time).toISOString().slice(0, 16);
         setForm({
           time: formattedTime,
-          contributor_name: record.contributor_name,
+          contributor_name: record.contributor.name,
           points: record.points,
           note: record.note,
           image: record.image,
         });
       } catch (error) {
+        console.error('Error loading record:', error);
         setStatus({
           message: 'Failed to load record',
           error: true,
@@ -47,30 +53,29 @@ const EditRecord = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     setStatus({ message: 'Updating...', error: false });
     
     const formData = new FormData();
-    formData.append('time', form.time);
-    formData.append('contributor_name', form.contributor_name);
-    formData.append('points', form.points);
-    formData.append('note', form.note);
-    if (form.image instanceof File) {
-      formData.append('image', form.image);
-    }
+    Object.entries(form).forEach(([key, value]) => {
+      if (value !== null && (key !== 'image' || value instanceof File)) {
+        formData.append(key, value);
+      }
+    });
 
     try {
       await api.put(`/housework/${id}/`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       setStatus({ message: 'Record updated successfully!', error: false });
-      setTimeout(() => navigate('/housework'), 1500);
+      setTimeout(() => navigate('/'), 1500);
     } catch (error) {
       setStatus({
         message: error.response?.data || 'Error updating record',
         error: true,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -84,58 +89,21 @@ const EditRecord = () => {
           {status.message}
         </div>
       )}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="datetime-local"
-          value={form.time}
-          onChange={(e) => setForm({ ...form, time: e.target.value })}
-          className="border rounded p-2 w-full"
-        />
-        <input
-          type="text"
-          placeholder="Contributor Name"
-          value={form.contributor_name}
-          onChange={(e) => setForm({ ...form, contributor_name: e.target.value })}
-          className="border rounded p-2 w-full"
-        />
-        <input
-          type="number"
-          min="1"
-          max="5"
-          value={form.points}
-          onChange={(e) => setForm({ ...form, points: parseInt(e.target.value) })}
-          className="border rounded p-2 w-full"
-        />
-        <textarea
-          placeholder="Note"
-          value={form.note}
-          onChange={(e) => setForm({ ...form, note: e.target.value })}
-          className="border rounded p-2 w-full"
-        />
-        {typeof form.image === 'string' && (
-          <div className="mb-2">
-            <img src={form.image} alt="Current" className="max-w-xs" />
-            <p className="text-sm text-gray-500">Current image</p>
-          </div>
-        )}
-        <input
-          type="file"
-          onChange={(e) => setForm({ ...form, image: e.target.files[0] })}
-          className="border rounded p-2 w-full"
-        />
-        <div className="flex space-x-4">
-          <button type="submit" className="bg-blue-500 text-white rounded p-2 flex-1">
-            Update
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="bg-gray-500 text-white rounded p-2 flex-1"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+      <RecordForm
+        form={form}
+        setForm={setForm}
+        onSubmit={handleSubmit}
+        submitLabel="Update"
+        currentImage={typeof form.image === 'string' ? getImageUrl(form.image) : null}
+        isLoading={isSubmitting}
+      />
+      <button
+        type="button"
+        onClick={() => navigate('/')}
+        className="mt-4 bg-gray-500 text-white rounded p-2 w-full"
+      >
+        Cancel
+      </button>
     </div>
   );
 };
