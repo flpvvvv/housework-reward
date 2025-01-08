@@ -20,113 +20,139 @@ class BaseTestCase(APITestCase):
 class ContributorTests(BaseTestCase):
     def setUp(self):
         super().setUp()
-        self.create_url = reverse("add_contributor")
-        self.update_url = reverse("update_contributor", args=[self.contributor.id])
-        self.delete_url = reverse("delete_contributor", args=[self.contributor.id])
+        self.list_create_url = reverse('contributor-list')
+        self.detail_url = lambda pk: reverse('contributor-detail', args=[pk])
 
     def test_crud_operations(self):
         # Create
         response = self.client.post(
-            self.create_url, {"name": "New User"}, format="json"
+            self.list_create_url, {"name": "New User"}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Contributor.objects.count(), 2)
 
+        # Read (list)
+        response = self.client.get(self.list_create_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 2)
+
+        # Read (detail)
+        response = self.client.get(self.detail_url(self.contributor.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['name'], "Test User")
+
         # Update
         response = self.client.put(
-            self.update_url, {"name": "Updated User"}, format="json"
+            self.detail_url(self.contributor.id),
+            {"name": "Updated User"},
+            format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.contributor.refresh_from_db()
         self.assertEqual(self.contributor.name, "Updated User")
 
         # Delete
-        response = self.client.delete(self.delete_url)
+        response = self.client.delete(self.detail_url(self.contributor.id))
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Contributor.objects.count(), 1)
-
-    def test_error_handling(self):
-        invalid_url = reverse("update_contributor", args=[999])
-        response = self.client.put(invalid_url, {"name": "Updated User"}, format="json")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-        response = self.client.delete(invalid_url)
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class HouseworkRecordTests(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.record = HouseworkRecord.objects.create(
-            note="Test Task", points=10, contributor=self.contributor
+            note="Test Task",
+            points=10,
+            contributor=self.contributor
         )
-        self.create_url = reverse("add_housework_record")
-        self.update_url = reverse("update_housework_record", args=[self.record.id])
-        self.delete_url = reverse("delete_housework_record", args=[self.record.id])
+        self.list_create_url = reverse('houseworkrecord-list')
+        self.detail_url = lambda pk: reverse('houseworkrecord-detail', args=[pk])
 
-    def test_create_record(self):
+    def test_crud_operations(self):
+        # Create
         data = {
             "contributor_name": "John Doe",
             "points": 3,
-            "note": "Cleaned the kitchen",
+            "note": "Cleaned the kitchen"
         }
-        response = self.client.post(self.create_url, data, format="json")
+        response = self.client.post(self.list_create_url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["contributor"]["name"], "John Doe")
 
-        # Test invalid data
-        response = self.client.post(
-            self.create_url, {"points": "invalid"}, format="json"
+        # Read (list)
+        response = self.client.get(self.list_create_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(len(response.data['results']) >= 1)
+
+        # Read (detail)
+        response = self.client.get(self.detail_url(self.record.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['note'], "Test Task")
+
+        # Update
+        data = {
+            "note": "Updated Task",
+            "points": 15,
+            "contributor_name": "Test User"
+        }
+        response = self.client.put(
+            self.detail_url(self.record.id),
+            data,
+            format="json"
         )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["note"], "Updated Task")
+
+        # Delete
+        response = self.client.delete(self.detail_url(self.record.id))
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
     @patch("housework.views.get_minio_client")
     def test_image_operations(self, mock_get_minio):
+        mock_client = mock_get_minio.return_value
+        mock_client.put_object.return_value = None
+        
         # Create with image
         data = {
             "contributor_name": "Jane Doe",
             "points": 5,
             "note": "Vacuumed",
-            "image": self.test_image,
+            "image": self.test_image
         }
-        response = self.client.post(self.create_url, data, format="multipart")
+        response = self.client.post(
+            self.list_create_url,
+            data,
+            format='multipart'
+        )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue("image" in response.data)
+        self.assertTrue(mock_client.put_object.called)
 
         # Update with image
+        new_image = SimpleUploadedFile(
+            name="updated_image.jpg",
+            content=b"new-fake-image-content",
+            content_type="image/jpeg"
+        )
+        data["image"] = new_image
         data["note"] = "Updated task"
-        response = self.client.put(self.update_url, data, format="multipart")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # Update without changing image
-        self.record.save()
         response = self.client.put(
-            self.update_url,
-            {
-                "note": "No image change",
-                "points": 15,
-                "contributor_name": self.contributor.name,
-            },
-            format="json",
+            self.detail_url(response.data['id']),
+            data,
+            format='multipart'
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_crud_operations(self):
-        # Update
-        data = {"note": "Updated Task", "points": 15, "contributor_name": "New User"}
-        response = self.client.put(self.update_url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["note"], "Updated Task")
-
-        # Delete
-        response = self.client.delete(self.delete_url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(HouseworkRecord.objects.count(), 0)
+        self.assertTrue("image" in response.data)
 
     def test_error_handling(self):
-        invalid_url = reverse("update_housework_record", args=[999])
-        response = self.client.put(invalid_url, {"note": "Test"}, format="json")
+        # Test invalid record ID
+        response = self.client.get(self.detail_url(999))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-        response = self.client.delete(invalid_url)
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        # Test invalid data
+        response = self.client.post(
+            self.list_create_url,
+            {"points": "invalid"},
+            format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

@@ -1,7 +1,7 @@
+from rest_framework import viewsets
 from rest_framework import status
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
 from .serializers import HouseworkRecordSerializer, ContributorSerializer
 from minio import Minio
 from django.conf import settings
@@ -24,136 +24,53 @@ class StandardResultsSetPagination(PageNumberPagination):
     max_page_size = 100
 
 
-@api_view(["POST"])
-def add_housework_record(request):
-    data = request.data.copy()
-    
-    if "image" in request.FILES:
-        image = request.FILES["image"]
+class HouseworkRecordViewSet(viewsets.ModelViewSet):
+    queryset = HouseworkRecord.objects.all().order_by('-record_time')
+    serializer_class = HouseworkRecordSerializer
+    pagination_class = StandardResultsSetPagination
+
+    def handle_image_upload(self, image):
         file_extension = image.name.split(".")[-1]
         filename = f"{uuid.uuid4()}.{file_extension}"
-
         client = get_minio_client()
-
-        # Get the file size
-        file_size = image.size
-
         client.put_object(
             settings.MINIO_BUCKET_NAME,
             filename,
             image,
-            length=file_size,  # Use the actual file size
+            length=image.size,
             content_type=image.content_type,
         )
+        return f"{settings.MINIO_BUCKET_NAME}/{filename}"
+
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        if "image" in request.FILES:
+            data["image"] = self.handle_image_upload(request.FILES["image"])
         
-        data["image"] = f"{settings.MINIO_BUCKET_NAME}/{filename}"
-    
-    serializer = HouseworkRecordSerializer(data=data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-
-@api_view(["POST"])
-def add_contributor(request):
-    serializer = ContributorSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(["PUT"])
-def update_contributor(request, pk):
-    try:
-        contributor = Contributor.objects.get(pk=pk)
-    except Contributor.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-    serializer = ContributorSerializer(contributor, data=request.data)
-    if serializer.is_valid():
-        serializer.save()
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        data = request.data.copy()
+        
+        if "image" in request.FILES:
+            data["image"] = self.handle_image_upload(request.FILES["image"])
+        
+        serializer = self.get_serializer(instance, data=data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
         return Response(serializer.data)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-@api_view(["DELETE"])
-def delete_contributor(request, pk):
-    try:
-        contributor = Contributor.objects.get(pk=pk)
-    except Contributor.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-    contributor.delete()
-    return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-@api_view(["PUT"])
-def update_housework_record(request, pk):
-    try:
-        record = HouseworkRecord.objects.get(pk=pk)
-    except HouseworkRecord.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-    data = request.data.copy()
-
-    # Ensure we keep the existing contributor if not provided
-    if "contributor_name" not in data:
-        data["contributor_name"] = record.contributor.name
-
-    if "image" in request.FILES:
-        image = request.FILES["image"]
-        file_extension = image.name.split(".")[-1]
-        filename = f"{uuid.uuid4()}.{file_extension}"
-
-        client = get_minio_client()
-
-        image_data = image.read()
-        client.put_object(
-            settings.MINIO_BUCKET_NAME,
-            filename,
-            image.file,
-            length=len(image_data),
-            content_type=image.content_type,
-        )
-
-        data["image"] = f"{settings.MINIO_BUCKET_NAME}/{filename}"
-    elif "image" not in data:
-        # Keep existing image if not provided in request
-        data["image"] = record.image
-
-    serializer = HouseworkRecordSerializer(record, data=data, partial=True)
-    if serializer.is_valid():
+    def perform_create(self, serializer):
         serializer.save()
-        return Response(serializer.data)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(["DELETE"])
-def delete_housework_record(request, pk):
-    try:
-        record = HouseworkRecord.objects.get(pk=pk)
-    except HouseworkRecord.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-    record.delete()
-    return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-@api_view(["GET"])
-def list_housework_records(request):
-    records = HouseworkRecord.objects.all().order_by("-record_time")
-    paginator = StandardResultsSetPagination()
-    paginated_records = paginator.paginate_queryset(records, request)
-    serializer = HouseworkRecordSerializer(paginated_records, many=True)
-    return paginator.get_paginated_response(serializer.data)
-
-
-@api_view(["GET"])
-def list_contributors(request):
-    contributors = Contributor.objects.all().order_by("name")
-    paginator = StandardResultsSetPagination()
-    paginated_contributors = paginator.paginate_queryset(contributors, request)
-    serializer = ContributorSerializer(paginated_contributors, many=True)
-    return paginator.get_paginated_response(serializer.data)
+class ContributorViewSet(viewsets.ModelViewSet):
+    queryset = Contributor.objects.all().order_by('name')
+    serializer_class = ContributorSerializer
+    pagination_class = StandardResultsSetPagination
