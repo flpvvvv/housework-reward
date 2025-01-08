@@ -26,32 +26,35 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 @api_view(["POST"])
 def add_housework_record(request):
-    serializer = HouseworkRecordSerializer(data=request.data)
+    data = request.data.copy()
+    
+    if "image" in request.FILES:
+        image = request.FILES["image"]
+        file_extension = image.name.split(".")[-1]
+        filename = f"{uuid.uuid4()}.{file_extension}"
 
+        client = get_minio_client()
+
+        if not client.bucket_exists(settings.MINIO_BUCKET_NAME):
+            client.make_bucket(settings.MINIO_BUCKET_NAME)
+
+        # Get the file size
+        file_size = image.size
+
+        client.put_object(
+            settings.MINIO_BUCKET_NAME,
+            filename,
+            image,
+            length=file_size,  # Use the actual file size
+            content_type=image.content_type,
+        )
+        
+        # Generate URL and add it to the data
+        url = client.presigned_get_object(settings.MINIO_BUCKET_NAME, filename)
+        data["image"] = url
+    
+    serializer = HouseworkRecordSerializer(data=data)
     if serializer.is_valid():
-        if "image" in request.FILES:
-            image = request.FILES["image"]
-            file_extension = image.name.split(".")[-1]
-            filename = f"{uuid.uuid4()}.{file_extension}"
-
-            client = get_minio_client()
-
-            if not client.bucket_exists(settings.MINIO_BUCKET_NAME):
-                client.make_bucket(settings.MINIO_BUCKET_NAME)
-
-            image_data = image.read()
-            client.put_object(
-                settings.MINIO_BUCKET_NAME,
-                filename,
-                image.file,
-                length=len(image_data),
-                content_type=image.content_type,
-            )
-            presigned_url = client.generate_presigned_url(
-                "GET", settings.MINIO_BUCKET_NAME, filename
-            )
-            serializer.validated_data["image"] = presigned_url
-
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
