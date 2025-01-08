@@ -37,7 +37,15 @@ const ViewRecords = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Records</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Records</h1>
+        <button
+          onClick={() => navigate('/add')}
+          className="bg-green-500 text-white rounded px-4 py-2"
+        >
+          Add Record
+        </button>
+      </div>
       {records.length === 0 ? (
         <p>No records found</p>
       ) : (
